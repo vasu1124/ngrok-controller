@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngrok-controller
+  namespace: ngrok-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngrok-controller
+  template:
+    metadata:
+      labels:
+        app: ngrok-controller
+    spec:
+      serviceAccount: "sa-ngrok-controller"
+      containers:
+      - name: ngrok-controller
+        image: vasu1124/ngrok-controller
+        ports:
+        - containerPort: 4040
+        volumeMounts:
+        - mountPath: /root/.ngrok2
+          readOnly: true
+          name: ngrok2-volume
+      volumes:
+      - name: ngrok2-volume
+        configMap:
+          name: ngrok-config

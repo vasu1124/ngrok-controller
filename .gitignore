@@ -1,0 +1,6 @@
+dist
+node_modules
+src/.gitignore
+coverage/*
+**/*.swp
+.DS_Store

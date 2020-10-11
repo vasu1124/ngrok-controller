@@ -1,0 +1,38 @@
+apiVersion: skaffold/v1
+kind: Config
+
+metadata:
+  name: ngrok-controller
+
+build:
+  artifacts:
+    - image: vasu1124/ngrok-controller
+      context: .
+      docker:
+        dockerfile: Dev.Dockerfile
+      sync:
+        manual:
+          - src: dist/**/*
+            dest: /app/
+
+deploy:
+  kustomize:
+    path: kubernetes
+
+profiles:
+  - name: Run Profile
+    activation:
+      - command: run
+    patches:
+      - op: replace
+        path: /build/artifacts/0/docker/dockerfile
+        value: Prod.Dockerfile
+
+  - name: Development Profile
+    activation:
+      - command: dev
+    patches:
+      - op: replace
+        path: /build/artifacts/0/docker/dockerfile
+        value: Dev.Dockerfile
+
