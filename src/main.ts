@@ -1,12 +1,11 @@
 import { configure, getLogger } from "log4js";
 import program from "commander";
-import NgrokOperator  from './NgrokOperator';
 import NgrokContoller from './NgrokController';
 
 // ------------------------------------------------
 // Parse command line options
 // ------------------------------------------------
-const version = process.env.npm_package_version || '0.0.0';
+const { version } = require('../package.json') || '0.0.0';
 
 const cli = program
   .name("vasu1124/ngrok")
