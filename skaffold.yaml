@@ -15,10 +15,6 @@ build:
           - src: dist/**/*
             dest: /app/
 
-deploy:
-  kustomize:
-    path: kubernetes
-
 profiles:
   - name: Run Profile
     activation:
@@ -27,6 +23,9 @@ profiles:
       - op: replace
         path: /build/artifacts/0/docker/dockerfile
         value: Prod.Dockerfile
+    deploy:
+      kustomize:
+        path: kubernetes/Run
 
   - name: Development Profile
     activation:
@@ -35,4 +34,6 @@ profiles:
       - op: replace
         path: /build/artifacts/0/docker/dockerfile
         value: Dev.Dockerfile
-
+    deploy:
+      kustomize:
+        path: kubernetes/Dev

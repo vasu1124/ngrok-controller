@@ -3,16 +3,18 @@ LABEL maintainer="vasu1124"
 
 # Copy everything and create workdir
 WORKDIR /app
-COPY package.json package-lock.json tsconfig.json /app/
-COPY src /app/src/
+
+COPY package.json package-lock.json tsconfig.json ./
 
 # Install  dependencies
-RUN npm install --no-optional && npm cache clean --force
+RUN npm install --no-audit --no-optional && npm cache clean --force
 
+# Build with tsc
+COPY src src/
 RUN npm run build && rm -rf src
 
-# Debugging output
-RUN find . -not -path "./node_modules/*" -print
+# List output
+# RUN find . -not -path "./node_modules/*" -print
 
 # -------------------------------------------------------------
 # Final container image
@@ -23,13 +25,9 @@ WORKDIR /app
 
 # RUN find / -print
 COPY --from=builder /app /app/
-RUN npm install -g nodemon
+
+# List output
 RUN find . -not -path "./node_modules/*" -print
 
-# Run with debugging port when container launches
-#ENTRYPOINT ["node", "--inspect=9229", "dist/main.js"]
-
-EXPOSE 9229
-# Run with nodemon watching .cds and .js files
-# On any change, cds deploy
-CMD ["nodemon", "--ignore", "node_modules/**/*", "-e", "js", "node", "--inspect=9229", "dist/main.js"]
+# Run with node
+CMD ["node", "dist/main.js", "--log", "info"]

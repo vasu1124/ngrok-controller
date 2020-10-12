@@ -9,11 +9,9 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 RUN npm install -g --no-audit --no-optional nodemon && npm install --no-audit --no-optional && npm cache clean --force
 COPY dist dist/
-RUN find . -not -path "./node_modules/*" -print
+# RUN find . -not -path "./node_modules/*" -print
 
 EXPOSE 9229
-# Run with debugging port when container launches
-#ENTRYPOINT ["node", "--inspect=9229", "dist/main.js"]
 
 # Run with nodemon watching .js files
 # --inspect or --inspect-brk
