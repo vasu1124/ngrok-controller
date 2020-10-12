@@ -5,5 +5,11 @@ metadata:
   namespace: ngrok-controller
 data:
   ngrok.yml: |+
-    authtoken: your_ngrok_token
+    # check https://ngrok.com/docs
+    # us, ..., in
+    region: eu
+    # logfmt, json
+    log_format: term
+    metadata: '{"comment": "used for tests"}'
+    # authtoken: your_ngrok_token
 
