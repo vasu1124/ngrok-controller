@@ -3,12 +3,12 @@ import Operator, { ResourceEventType, ResourceEvent, ResourceMeta, ResourceMetaI
 import { setIntervalAsync, clearIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
 import * as k8s from '@kubernetes/client-node';
 import {Mutex} from 'async-mutex';
-import ngrok from 'ngrok';
+import * as ngrok from 'ngrok';
 
 const annotation = 'vasu1124/ngrok';
 const mutex = new Mutex();
 
-interface ngrokconnection {
+interface ngrokConnection {
   url: string;
   target: string;
   name: string | undefined;
@@ -17,19 +17,19 @@ interface ngrokconnection {
 
 export default class NgrokController extends Operator {
 
-  private ngrokMap: Map<string | undefined, ngrokconnection> = new Map<string, ngrokconnection>();
+  private ngrokMap: Map<string | undefined, ngrokConnection> = new Map<string, ngrokConnection>();
   private reconcileTimer!: SetIntervalAsyncTimer;
 
-  constructor(protected log: Logger) {
+  constructor(protected log: Logger, reconcileInterval: number) {
     super(log);
-  }
-
-  protected async init() {
     // Inittialize timer
     this.reconcileTimer = setIntervalAsync(async () => {
       this.log.debug("reconcileTimer: Running reconcile from timer");
       await this.reconcile();
-    }, 60 * 1000);
+    }, reconcileInterval);
+  }
+
+  protected async init() {
 
     await this.watchResource('', 'v1', 'services', async (e) => {
       const object: k8s.V1Service = e.object;
@@ -89,7 +89,7 @@ export default class NgrokController extends Operator {
           this.disconnectNgrok(uid, durl)
             .then(() => {
               this.log.info("Ungroked: " + object.metadata?.name + "." + object.metadata?.namespace + " disconnected from " + durl);
-              return this.connectNgrok(uid, target, object.metadata?.name, object.metadata?.namespace);
+              return this.connectNgrok(uid, {url: "", target: target, name: object.metadata?.name, namespace: object.metadata?.namespace});
             })
             .then((url) => {
               if (url !== undefined) {
@@ -125,7 +125,7 @@ export default class NgrokController extends Operator {
     else if (object.spec?.type === "LoadBalancer") {
       //added
       let target = this.resolveTarget(object);
-      this.connectNgrok(uid, target, object.metadata?.name, object.metadata?.namespace)
+      this.connectNgrok(uid, {url: "", target: target, name: object.metadata?.name, namespace: object.metadata?.namespace})
         .then((url) => {
           if (url !== undefined) {
             let rmeta = ResourceMetaImpl.createWithPlural("services", object);
@@ -154,17 +154,19 @@ export default class NgrokController extends Operator {
     }
   }
 
-  private async connectNgrok(uid: string | undefined, target: string, name: string | undefined, namespace: string | undefined): Promise<string | undefined> {
+  private async connectNgrok(uid: string | undefined, nc: ngrokConnection): Promise<string | undefined> {
+    // ngrok.connect() path needs to be safeguarded with a mutex
     const release = await mutex.acquire();
     try {
-      const url = await ngrok.connect({
+      nc.url = await ngrok.connect({
         proto: 'http',
-        addr: target,
+        addr: nc.target,
         onLogEvent: msg => { this.log.debug(msg) },
         onStatusChange: status => { this.log.warn(status) },
       });
-      this.ngrokMap.set(uid, { url, target, name, namespace });
-      return url;
+      
+      this.ngrokMap.set(uid, nc);
+      return nc.url;
     }
     catch (error) {
       this.log.error(error);
