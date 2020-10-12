@@ -194,7 +194,7 @@ export default class NgrokController extends Operator {
 
       //portmap refernce exists?
       if (portobj !== undefined && portobj.length >= 1) {
-        this.log.info(`Annotation '${annotation}' found. Choosing first portmap: `, portobj);
+        this.log.debug(`Annotation '${annotation}' found. Choosing first portmap: `, portobj);
         port = portobj[0].port;
       }
       else {
@@ -206,7 +206,7 @@ export default class NgrokController extends Operator {
     if (portname === undefined &&
       object.spec!.ports !== undefined && object.spec!.ports.length >= 1) {
       port = object.spec!.ports[0].port;
-      this.log.info("Defaulting to portmap: ", object.spec!.ports[0]);
+      this.log.debug("Defaulting to portmap: ", object.spec!.ports[0]);
     }
     else if (portname === undefined) {
       this.log.warn("Could not associate any port. Defaulting to " + port);
