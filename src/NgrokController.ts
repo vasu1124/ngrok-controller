@@ -2,7 +2,11 @@ import { Logger } from "log4js";
 import Operator, { ResourceEventType, ResourceEvent, ResourceMeta, ResourceMetaImpl } from '@dot-i/k8s-operator';
 import { setIntervalAsync, clearIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
 import * as k8s from '@kubernetes/client-node';
+import {Mutex} from 'async-mutex';
 import ngrok from 'ngrok';
+
+const annotation = 'vasu1124/ngrok';
+const mutex = new Mutex();
 
 interface ngrokconnection {
   url: string;
@@ -151,6 +155,7 @@ export default class NgrokController extends Operator {
   }
 
   private async connectNgrok(uid: string | undefined, target: string, name: string | undefined, namespace: string | undefined): Promise<string | undefined> {
+    const release = await mutex.acquire();
     try {
       const url = await ngrok.connect({
         proto: 'http',
@@ -165,6 +170,9 @@ export default class NgrokController extends Operator {
       this.log.error(error);
       await ngrok.kill();
     }
+    finally {
+      release();
+    }
     return undefined;
   }
 
@@ -176,7 +184,7 @@ export default class NgrokController extends Operator {
     if (object.metadata!.annotations === undefined)
       portname = undefined;
     else
-      portname = object.metadata!.annotations!['vasu1124/ngrok'];
+      portname = object.metadata!.annotations![annotation];
 
     if (portname !== undefined) {
       //annotation exists
@@ -184,12 +192,12 @@ export default class NgrokController extends Operator {
 
       //portmap refernce exists?
       if (portobj !== undefined && portobj.length >= 1) {
-        this.log.info("Annotation 'vasu1124/ngrok' found. Choosing first portmap: ", portobj);
+        this.log.info(`Annotation '${annotation}' found. Choosing first portmap: `, portobj);
         port = portobj[0].port;
       }
       else {
         portname = undefined;
-        this.log.warn("Annotation 'vasu1124/ngrok' not found.");
+        this.log.warn(`Annotation '${annotation}' not found.`);
       }
     }
 

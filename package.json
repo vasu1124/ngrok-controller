@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@dot-i/k8s-operator": "^1.0.13",
+    "async-mutex": "^0.2.4",
     "commander": "^6.1.0",
     "log4js": "^6.3.0",
     "ngrok": "^3.3.0",
