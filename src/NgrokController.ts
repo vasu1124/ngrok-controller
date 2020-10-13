@@ -62,18 +62,14 @@ export default class NgrokController extends Operator {
     });    
   }
 
-  private handleDeleteResource(object: k8s.V1Service): void {
+  private async handleDeleteResource(object: k8s.V1Service): Promise<void> {
     if (!this.ngrokMap.has(object.metadata?.uid)) {
       this.log.warn("No active Ngrok for this service " + object.metadata?.uid);
       return;
     }
 
     const uid = object.metadata?.uid;
-    const url = this.ngrokMap.get(object.metadata?.uid)?.url;
-    this.disconnectNgrok(uid, url)
-      .then(() => {
-        this.log.info("Ungroked: " + object.metadata?.name + "." + object.metadata?.namespace + " disconnected from " + url);
-      });
+    await this.disconnectNgrok(uid, this.ngrokMap.get(object.metadata?.uid));
   }
 
   private handleCreateOrUpdateResource(object: k8s.V1Service): void {
@@ -85,10 +81,8 @@ export default class NgrokController extends Operator {
         let target = this.resolveTarget(object);
         if (this.ngrokMap.get(uid)?.target !== target) {
           //changes required
-          const durl = this.ngrokMap.get(object.metadata?.uid)?.url;
-          this.disconnectNgrok(uid, durl)
+          this.disconnectNgrok(uid, this.ngrokMap.get(object.metadata?.uid))
             .then(() => {
-              this.log.info("Ungroked: " + object.metadata?.name + "." + object.metadata?.namespace + " disconnected from " + durl);
               return this.connectNgrok(uid, {url: "", target: target, name: object.metadata?.name, namespace: object.metadata?.namespace});
             })
             .then((url) => {
@@ -96,7 +90,6 @@ export default class NgrokController extends Operator {
                 let rmeta = ResourceMetaImpl.createWithPlural("services", object);
                 let hostname = url.replace("https://", "");
                 let statusPatch = { "loadBalancer": { "ingress": [{ "hostname": hostname }] } };
-                this.log.info("Ngroked: " + object.metadata?.name + "." + object.metadata?.namespace + " connected to " + url);
                 return this.patchResourceStatus(rmeta, statusPatch);
               }
             })
@@ -109,10 +102,8 @@ export default class NgrokController extends Operator {
       }
       else {
         //modified: remove ngrok
-        const url = this.ngrokMap.get(object.metadata?.uid)?.url;
-        this.disconnectNgrok(uid, url)
+        this.disconnectNgrok(uid, this.ngrokMap.get(object.metadata?.uid))
           .then(() => {
-            this.log.info("Ungroked: " + object.metadata?.name + "." + object.metadata?.namespace + " disconnected from " + url);
             let rmeta = ResourceMetaImpl.createWithPlural("services", object);
             let statusPatch = { "loadBalancer": { "ingress": [{ "hostname": "not.available" }] } };
             return this.patchResourceStatus(rmeta, statusPatch);
@@ -131,7 +122,6 @@ export default class NgrokController extends Operator {
             let rmeta = ResourceMetaImpl.createWithPlural("services", object);
             let hostname = url.replace("https://", "");
             let statusPatch = { "loadBalancer": { "ingress": [{ "hostname": hostname }] } };
-            this.log.info("Ngroked: " + object.metadata?.name + "." + object.metadata?.namespace + " connected to " + url);
             return this.patchResourceStatus(rmeta, statusPatch);
           }
         })
@@ -141,17 +131,19 @@ export default class NgrokController extends Operator {
     }
   }
 
-  private async disconnectNgrok(uid: string | undefined, url: string | undefined): Promise<void> {
-    try {
-      //must disconnect two urls: https and http.
-      await ngrok.disconnect(url);
-      await ngrok.disconnect(url?.replace("https", "http"));
-      this.ngrokMap.delete(uid);
-    }
-    catch (error) {
-      this.log.error(error);
-      await ngrok.kill();
-    }
+  private async disconnectNgrok(uid: string | undefined, nc: ngrokConnection | undefined): Promise<void> {
+    if (nc !== undefined)
+      try {
+        //must disconnect two urls: https and http.
+        await ngrok.disconnect(nc.url);
+        await ngrok.disconnect(nc.url?.replace("https", "http"));
+        this.ngrokMap.delete(uid);
+        this.log.info(`Ungroked: ${nc.name}.${nc.namespace} disconnected from ${nc.url}`);
+      }
+      catch (error) {
+        this.log.error(error);
+        await ngrok.kill();
+      }
   }
 
   private async connectNgrok(uid: string | undefined, nc: ngrokConnection): Promise<string | undefined> {
@@ -166,6 +158,7 @@ export default class NgrokController extends Operator {
       });
       
       this.ngrokMap.set(uid, nc);
+      this.log.info(`Ngroked: ${nc.name}.${nc.namespace}/${nc.target} connected to ${nc.url}`);
       return nc.url;
     }
     catch (error) {
@@ -194,7 +187,7 @@ export default class NgrokController extends Operator {
 
       //portmap refernce exists?
       if (portobj !== undefined && portobj.length >= 1) {
-        this.log.debug(`Annotation '${annotation}' found. Choosing first portmap: `, portobj);
+        this.log.debug(`Annotation '${annotation}' found. Choosing first portmap: `, portobj[0]);
         port = portobj[0].port;
       }
       else {
