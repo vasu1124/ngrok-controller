@@ -27,7 +27,7 @@ WORKDIR /app
 COPY --from=builder /app /app/
 
 # List output
-RUN find . -not -path "./node_modules/*" -print
+# RUN find . -not -path "./node_modules/*" -print
 
 # Run with node
 CMD ["node", "dist/main.js", "--log", "info"]
