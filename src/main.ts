@@ -29,7 +29,7 @@ if (Number.isNaN(interval))
   cli.interval = `${interval}`;
 }
 
-logger.debug(cli.opts());
+logger.info(cli.opts());
 
 
 const main = async (options: any) => {
