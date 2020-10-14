@@ -2,7 +2,7 @@
 
 Expose services in local [kind](https://github.com/kubernetes-sigs/kind/), [minikube](https://github.com/kubernetes/minikube), or actually any Kubernetes cluster you got running on your laptop via public endpoints provided by [ngrok](ngrok.com). The ngrok-controller facilitates as LoadBalancer service.
 
-This project has been written in [Typescript](https://www.typescriptlang.org/) and uses the [dot-i/k8s-operator](https://github.com/dot-i/k8s-operator-node) and [kubernetes/client-node](https://github.com/kubernetes-client/javascript) modules.
+This project has been written in [Typescript](https://www.typescriptlang.org/) and uses the [dot-i/k8s-operator](https://github.com/dot-i/k8s-operator-node), [kubernetes/client-node](https://github.com/kubernetes-client/javascript), and [ngrok](https://github.com/bubenshchykov/ngrok) modules.
 
 ## Quick Walkthrough
 
@@ -45,5 +45,17 @@ $ kubectl -n ngrok-controller logs ngrok-controller-6c596bc8fd-4pgsk
 [WARN] ngrok - connected
 [INFO] ngrok - Ngroked: httpbin.test/10.104.55.133:8080 connected to https://e9da3abf0e68.eu.ngrok.io
 [INFO] ngrok - Service status patched: httpbin.test
+
+$ open https://e9da3abf0e68.eu.ngrok.io
 ```
-In the above example you can now reach your local service endpoint via `https://e9da3abf0e68.eu.ngrok.io`.
+In the above example you can now reach your local service endpoint via `https://e9da3abf0e68.eu.ngrok.io`: ![](docs/images/httpbin.png)
+
+The ngrok tunnel is established by spawning a process (ngrok binary) within the controller pod, which also exposes a monitor UI. You can access this UI easily with a port-forward:
+```bash
+$ kubectl -n ngrok-controller port-forward service/ngrok-monitor 4040
+Forwarding from 127.0.0.1:4040 -> 4040
+Forwarding from [::1]:4040 -> 4040
+
+$ open http://localhost:4040/status
+```
+![](docs/images/ngrok-monitorui.png)
