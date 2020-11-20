@@ -1,6 +1,6 @@
 # ngrok-controller, a Kubernetes Service Controller 
 
-Expose services in local [kind](https://github.com/kubernetes-sigs/kind/), [minikube](https://github.com/kubernetes/minikube), or actually any Kubernetes cluster you got running on your laptop via public endpoints provided by [ngrok](ngrok.com). The ngrok-controller facilitates as LoadBalancer service.
+Expose services in local [kind](https://github.com/kubernetes-sigs/kind/), [minikube](https://github.com/kubernetes/minikube), or actually any Kubernetes cluster you got running on your laptop via public endpoints provided by [ngrok](https://ngrok.com). The ngrok-controller facilitates as LoadBalancer service.
 
 This project has been written in [Typescript](https://www.typescriptlang.org/) and uses the [dot-i/k8s-operator](https://github.com/dot-i/k8s-operator-node), [kubernetes/client-node](https://github.com/kubernetes-client/javascript), and [ngrok](https://github.com/bubenshchykov/ngrok) modules.
 
