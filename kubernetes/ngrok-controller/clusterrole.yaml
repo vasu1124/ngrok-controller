@@ -8,6 +8,7 @@ rules:
   resources:
   - services
   - services/status
+  - ServiceAccount
   verbs:
   - get
   - list

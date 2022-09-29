@@ -16,4 +16,4 @@ commonLabels:
   app: ngrok-controller
 
 # must be default for debugging with vscode
-namespace: default
+namespace: ngrok-controller

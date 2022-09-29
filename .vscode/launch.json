@@ -5,17 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Kubernetes: Run/Debug",
-            "type": "cloudcode.kubernetes",
-            "request": "launch",
-            "skaffoldConfig": "${workspaceFolder}/skaffold.yaml",
-            "watch": true,
-            "cleanUp": true,
-            "portForward": true,
-            "imageRegistry": "docker.io"
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to dev:start",
+            "port": 9229,
+            "restart": true,
+            "cwd": "${workspaceRoot}",
+            "trace": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "sourceMaps": true,
+            "smartStep": true,
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**"
+            ],
+            "localRoot": "${workspaceFolder}",
+            "sourceMapPathOverrides": {
+                "/app/*": "${workspaceRoot}/*"
+            },
+            "remoteRoot": "/app/"
         },
         {
-            "type": "pwa-node",
+            "type": "node",
             "request": "launch",
             "name": "Launch Program",
             "skipFiles": [
@@ -31,19 +47,7 @@
             "resolveSourceMapLocations": [
                 "${workspaceFolder}/**",
                 "!**/node_modules/**"
-            ], 
+            ],
         },
-        {
-            "type": "cloudcode",
-            "language": "Node",
-            "request": "attach",
-            "debugPort": 9229,
-            "localRoot": "${workspaceFolder}",
-            "remoteRoot": "/app",
-            "name": "Attach app on Kubernetes Cluster: ngrok-controller",
-            "podSelector": {
-                "app": "ngrok-controller"
-            }
-        }
     ]
 }

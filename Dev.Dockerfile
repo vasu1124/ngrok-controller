@@ -1,18 +1,19 @@
 # -------------------------------------------------------------
 # Dev container image
 # -------------------------------------------------------------
-FROM node:14-alpine
+FROM node:18-alpine AS builder
 LABEL maintainer="vasu1124"
 
+# Create workdir
 WORKDIR /app
 
-COPY package.json package-lock.json tsconfig.json ./
-RUN npm install -g --no-audit --no-optional nodemon && npm install --no-audit --no-optional && npm cache clean --force
-COPY dist dist/
-# RUN find . -not -path "./node_modules/*" -print
+COPY package.json tsconfig.json ./
+COPY src src/
+# Install  dependencies
+RUN npm install --audit=false --omit=optional && npm cache clean --force
 
 EXPOSE 9229
 
-# Run with nodemon watching .js files
+# Run with nodemon watching files
 # --inspect or --inspect-brk
-CMD ["nodemon", "--ignore", "node_modules/**/*", "-e", "js", "--inspect=9229", "dist/main.js", "--log", "debug"]
+CMD ["npm", "run", "dev:start"]

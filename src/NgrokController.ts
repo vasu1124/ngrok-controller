@@ -1,6 +1,6 @@
 import { Logger } from "log4js";
 import Operator, { ResourceEventType, ResourceEvent, ResourceMeta, ResourceMetaImpl } from '@dot-i/k8s-operator';
-import { setIntervalAsync, clearIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
+import { setIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
 import * as k8s from '@kubernetes/client-node';
 import {Mutex} from 'async-mutex';
 import * as ngrok from 'ngrok';
@@ -17,8 +17,8 @@ interface ngrokConnection {
 
 export default class NgrokController extends Operator {
 
-  private ngrokMap: Map<string | undefined, ngrokConnection> = new Map<string, ngrokConnection>();
-  private reconcileTimer!: SetIntervalAsyncTimer;
+  ngrokMap: Map<string | undefined, ngrokConnection> = new Map<string, ngrokConnection>();
+  reconcileTimer: SetIntervalAsyncTimer<[]>;
 
   constructor(protected log: Logger, reconcileInterval: number) {
     super(log);
@@ -33,6 +33,8 @@ export default class NgrokController extends Operator {
 
     await this.watchResource('', 'v1', 'services', async (e) => {
       const object: k8s.V1Service = e.object;
+
+      this.log.debug("received event ...", e.type);
 
       switch (e.type) {
         case ResourceEventType.Added:
@@ -132,17 +134,23 @@ export default class NgrokController extends Operator {
   }
 
   private async disconnectNgrok(uid: string | undefined, nc: ngrokConnection | undefined): Promise<void> {
+    // ngrok.disconnect() path needs to be safeguarded with a mutex
+    this.ngrokMap.delete(uid);
+    const release = await mutex.acquire();
     if (nc !== undefined)
       try {
         //must disconnect two urls: https and http.
         await ngrok.disconnect(nc.url);
         await ngrok.disconnect(nc.url?.replace("https", "http"));
-        this.ngrokMap.delete(uid);
         this.log.info(`Ungroked: ${nc.name}.${nc.namespace} disconnected from ${nc.url}`);
       }
       catch (error) {
         this.log.error(error);
         await ngrok.kill();
+        this.ngrokMap.clear();
+      }
+      finally {
+        release();
       }
   }
 
@@ -164,6 +172,7 @@ export default class NgrokController extends Operator {
     catch (error) {
       this.log.error(error);
       await ngrok.kill();
+      this.ngrokMap.clear();
     }
     finally {
       release();

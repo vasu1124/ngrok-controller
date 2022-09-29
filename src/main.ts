@@ -1,5 +1,5 @@
 import { configure, getLogger } from "log4js";
-import program from "commander";
+import { Command } from 'commander';
 import NgrokContoller from './NgrokController';
 
 // ------------------------------------------------
@@ -7,13 +7,14 @@ import NgrokContoller from './NgrokController';
 // ------------------------------------------------
 const { version } = require('../package.json') || '0.0.0';
 
-const cli = program
+const cli = new Command()
   .name("vasu1124/ngrok")
   .version(version, '-v, --version', 'output the current version')
   .usage("[Options]")
   .option("-l, --log <level>", "log level [ALL < TRACE < *DEBUG* < INFO < WARN < ERROR < FATAL < MARK < OFF]", "debug")
-  .option("-i, --interval <ms>", "reconcile interval [60000]ms", "60000")
-  .parse(process.argv);
+  .option("-i, --interval <ms>", "reconcile interval [60000]ms", "60000");
+
+cli.parse(process.argv);
 
 
 // ------------------------------------------------
@@ -21,12 +22,12 @@ const cli = program
 // ------------------------------------------------
 
 const logger = getLogger("ngrok");
-logger.level = cli.log;
-let interval = Number(cli.interval);
+logger.level = cli.opts().log;
+let interval = Number(cli.opts().interval);
 if (Number.isNaN(interval))
 {
   interval = 60*1000;
-  cli.interval = `${interval}`;
+  cli.opts().interval = `${interval}`;
 }
 
 logger.info(cli.opts());

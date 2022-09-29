@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1
+apiVersion: skaffold/v2beta29
 kind: Config
 
 metadata:
@@ -12,7 +12,7 @@ build:
         dockerfile: Dev.Dockerfile
       sync:
         manual:
-          - src: dist/**/*
+          - src: src/**/*
             dest: /app/
 
 profiles:
@@ -25,7 +25,8 @@ profiles:
         value: Prod.Dockerfile
     deploy:
       kustomize:
-        path: kubernetes/Run
+        paths: 
+        - "kubernetes/ngrok-controller"
 
   - name: Development Profile
     activation:
@@ -36,4 +37,13 @@ profiles:
         value: Dev.Dockerfile
     deploy:
       kustomize:
-        path: kubernetes/Dev
+        paths: 
+        - "kubernetes/ngrok-controller"
+        - "kubernetes/httpbin"
+    portForward:
+    - resourceType: Deployment
+      resourceName: ngrok-controller
+      namespace: ngrok-controller
+      port: 9229
+      localPort: 9229
+

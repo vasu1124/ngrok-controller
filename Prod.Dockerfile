@@ -1,25 +1,23 @@
-FROM node:14-alpine AS builder
+FROM node:18-alpine AS builder
 LABEL maintainer="vasu1124"
 
-# Copy everything and create workdir
+# Create workdir
 WORKDIR /app
 
-COPY package.json package-lock.json tsconfig.json ./
-
+COPY package.json tsconfig.json ./
 # Install  dependencies
-RUN npm install --no-audit --no-optional && npm cache clean --force
+RUN npm install --audit=false --omit=optional && npm cache clean --force
 
-# Build with tsc
+# Copy source
 COPY src src/
-RUN npm run build && rm -rf src
 
-# List output
-# RUN find . -not -path "./node_modules/*" -print
+# Build
+# RUN npm run build && rm -rf src
 
 # -------------------------------------------------------------
-# Final container image
+# Final container image, fresh setup 
 # -------------------------------------------------------------
-FROM node:14-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -30,4 +28,4 @@ COPY --from=builder /app /app/
 # RUN find . -not -path "./node_modules/*" -print
 
 # Run with node
-CMD ["node", "dist/main.js", "--log", "info"]
+CMD ["npm", "run", "start"]
